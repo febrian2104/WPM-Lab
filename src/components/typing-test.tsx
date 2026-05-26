@@ -3,7 +3,7 @@
 import { Moon, RotateCcw, Sun } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { scoreTypingAttempt } from "@/lib/scoring";
-import { buildWordQueue } from "@/lib/word-generator";
+import { buildStableWordQueue, buildWordQueue } from "@/lib/word-generator";
 
 const DURATION_OPTIONS = [
   { label: "1 menit", seconds: 60 },
@@ -59,13 +59,13 @@ export function TypingTest({
   const [duration, setDuration] = useState<DurationSeconds>(60);
   const [activeLanguageId, setActiveLanguageId] = useState(initialLanguageId);
   const [wordQueue, setWordQueue] = useState<string[]>(() =>
-    buildWordQueue(initialWordBank, WORD_BATCH_SIZE),
+    buildStableWordQueue(initialWordBank, WORD_BATCH_SIZE, initialLanguageId),
   );
   const [submittedWords, setSubmittedWords] = useState<string[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [status, setStatus] = useState<TestStatus>("idle");
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [now, setNow] = useState(() => getTimestamp());
+  const [now, setNow] = useState(0);
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const inputRef = useRef<HTMLInputElement>(null);
 
