@@ -1,7 +1,14 @@
 "use client";
 
 import { Moon, RotateCcw, Sun } from "lucide-react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { scoreTypingAttempt } from "@/lib/scoring";
 import { buildStableWordQueue, buildWordQueue } from "@/lib/word-generator";
 
@@ -18,6 +25,7 @@ const LINE_TOP_TOLERANCE = 6;
 type TestStatus = "idle" | "running" | "finished";
 type DurationSeconds = (typeof DURATION_OPTIONS)[number]["seconds"];
 type ThemeMode = "light" | "dark";
+const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 
 export type TypingLanguage = {
   id: string;
@@ -30,6 +38,30 @@ type TypingTestProps = {
   defaultLanguageId?: string;
   languages: readonly TypingLanguage[];
 };
+
+function subscribeSystemTheme(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const mediaQuery = window.matchMedia(SYSTEM_THEME_QUERY);
+
+  mediaQuery.addEventListener("change", onStoreChange);
+
+  return () => mediaQuery.removeEventListener("change", onStoreChange);
+}
+
+function getSystemThemeSnapshot(): ThemeMode {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  return window.matchMedia(SYSTEM_THEME_QUERY).matches ? "dark" : "light";
+}
+
+function getServerThemeSnapshot(): ThemeMode {
+  return "light";
+}
 
 function getTimestamp() {
   return Date.now();
@@ -68,10 +100,15 @@ export function TypingTest({
   const [status, setStatus] = useState<TestStatus>("idle");
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(0);
-  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const [themeMode, setThemeMode] = useState<ThemeMode | null>(null);
   const [visibleStart, setVisibleStart] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const wordRefs = useRef(new Map<number, HTMLSpanElement>());
+  const systemThemeMode = useSyncExternalStore(
+    subscribeSystemTheme,
+    getSystemThemeSnapshot,
+    getServerThemeSnapshot,
+  );
 
   const elapsedSeconds =
     startedAt === null
@@ -99,7 +136,8 @@ export function TypingTest({
     visibleStart,
     visibleStart + VISIBLE_WORD_COUNT,
   );
-  const isDarkMode = themeMode === "dark";
+  const activeThemeMode = themeMode ?? systemThemeMode;
+  const isDarkMode = activeThemeMode === "dark";
   const theme = isDarkMode
     ? {
         page: "bg-[#101412] text-teal-50",
@@ -116,10 +154,11 @@ export function TypingTest({
         wordTyped: "text-teal-50",
         wordPending: "text-teal-50/45",
         wrongText: "text-rose-300",
-        activeWrong: "bg-rose-300/15 text-teal-50",
-        activeWord: "bg-cyan-300/20 text-teal-50",
+        activeWrong: "text-teal-50",
+        activeWord: "text-teal-50",
+        currentLetter: "text-teal-50 before:bg-cyan-500/45",
         extraWrong: "bg-rose-300",
-        cursor: "bg-amber-300",
+        cursor: "bg-cyan-200",
         resultBorder: "border-teal-300/25",
         resultGrid: "text-teal-50/65",
       }
@@ -138,10 +177,11 @@ export function TypingTest({
         wordTyped: "text-slate-950",
         wordPending: "text-slate-500",
         wrongText: "text-rose-600",
-        activeWrong: "bg-rose-200/70 text-slate-950",
-        activeWord: "bg-cyan-300/50 text-slate-950",
+        activeWrong: "text-slate-950",
+        activeWord: "text-slate-950",
+        currentLetter: "text-slate-950 before:bg-cyan-300",
         extraWrong: "bg-rose-500",
-        cursor: "bg-amber-400",
+        cursor: "bg-cyan-700",
         resultBorder: "border-cyan-300/70",
         resultGrid: "text-slate-600",
       };
@@ -330,6 +370,8 @@ export function TypingTest({
             submittedWord !== undefined && typedCharacter === undefined;
           const isWrongCharacter =
             typedCharacter !== undefined && typedCharacter !== character;
+          const isCurrentCharacter =
+            isActive && typedWord.length === characterIndex;
           const characterClassName =
             isMissingCharacter || isWrongCharacter
               ? theme.wrongText
@@ -339,10 +381,19 @@ export function TypingTest({
 
           return (
             <Fragment key={`${word}-${characterIndex}`}>
-              {isActive && typedWord.length === characterIndex ? (
-                <TypingCursor className="left-[-1px]" colorClassName={theme.cursor} />
-              ) : null}
-              <span className={`relative inline-block ${characterClassName}`}>
+              <span
+                className={
+                  isCurrentCharacter
+                    ? `relative isolate inline-block before:absolute before:-inset-x-0.5 before:inset-y-0 before:-z-10 ${theme.currentLetter}`
+                    : `relative inline-block ${characterClassName}`
+                }
+              >
+                {isCurrentCharacter ? (
+                  <TypingCursor
+                    className="-left-0.5"
+                    colorClassName={theme.cursor}
+                  />
+                ) : null}
                 {character}
               </span>
             </Fragment>
@@ -354,7 +405,9 @@ export function TypingTest({
           />
         ) : null}
         {isActive && typedWord.length >= wordCharacters.length ? (
-          <TypingCursor className="left-0" colorClassName={theme.cursor} />
+          <span className="relative inline-block h-[1em] w-0 align-baseline">
+            <TypingCursor className="left-0" colorClassName={theme.cursor} />
+          </span>
         ) : null}
       </>
     );
@@ -537,11 +590,10 @@ function TypingCursor({
   colorClassName,
 }: TypingCursorProps) {
   return (
-    <span aria-hidden="true" className="relative inline-block w-0 align-baseline">
-      <span
-        className={`typing-caret pointer-events-none absolute bottom-[0.08em] h-[1.08em] w-0.5 rounded-full ${className} ${colorClassName}`}
-      />
-    </span>
+    <span
+      aria-hidden="true"
+      className={`typing-caret pointer-events-none absolute inset-y-0 w-[3px] rounded-full ${className} ${colorClassName}`}
+    />
   );
 }
 
