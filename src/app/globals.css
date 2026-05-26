@@ -22,3 +22,25 @@ body {
   background: #bbf7d0;
   color: #052e16;
 }
+
+@keyframes typing-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-caret {
+  animation: typing-caret-blink 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-caret {
+    animation: none;
+  }
+}

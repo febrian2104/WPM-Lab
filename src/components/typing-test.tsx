@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, RotateCcw, Sun } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { scoreTypingAttempt } from "@/lib/scoring";
 import { buildStableWordQueue, buildWordQueue } from "@/lib/word-generator";
 
@@ -12,6 +12,8 @@ const DURATION_OPTIONS = [
 ] as const;
 const WORD_BATCH_SIZE = 140;
 const WORD_BUFFER_THRESHOLD = 36;
+const VISIBLE_WORD_COUNT = 72;
+const LINE_TOP_TOLERANCE = 6;
 
 type TestStatus = "idle" | "running" | "finished";
 type DurationSeconds = (typeof DURATION_OPTIONS)[number]["seconds"];
@@ -67,7 +69,9 @@ export function TypingTest({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(0);
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const [visibleStart, setVisibleStart] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const wordRefs = useRef(new Map<number, HTMLSpanElement>());
 
   const elapsedSeconds =
     startedAt === null
@@ -91,8 +95,10 @@ export function TypingTest({
     typedWords: attemptedWords,
     durationSeconds: scoreDuration,
   });
-  const visibleStart = Math.max(0, currentWordIndex - 8);
-  const visibleWords = wordQueue.slice(visibleStart, visibleStart + 48);
+  const visibleWords = wordQueue.slice(
+    visibleStart,
+    visibleStart + VISIBLE_WORD_COUNT,
+  );
   const isDarkMode = themeMode === "dark";
   const theme = isDarkMode
     ? {
@@ -110,9 +116,10 @@ export function TypingTest({
         wordTyped: "text-teal-50",
         wordPending: "text-teal-50/45",
         wrongText: "text-rose-300",
-        activeWrong: "border-rose-300 pl-2",
-        activeWord: "border-amber-300 pl-2 text-teal-50",
+        activeWrong: "bg-rose-300/15 text-teal-50",
+        activeWord: "bg-cyan-300/20 text-teal-50",
         extraWrong: "bg-rose-300",
+        cursor: "bg-amber-300",
         resultBorder: "border-teal-300/25",
         resultGrid: "text-teal-50/65",
       }
@@ -131,9 +138,10 @@ export function TypingTest({
         wordTyped: "text-slate-950",
         wordPending: "text-slate-500",
         wrongText: "text-rose-600",
-        activeWrong: "border-rose-500 pl-2",
-        activeWord: "border-amber-300 pl-2 text-slate-950",
+        activeWrong: "bg-rose-200/70 text-slate-950",
+        activeWord: "bg-cyan-300/50 text-slate-950",
         extraWrong: "bg-rose-500",
+        cursor: "bg-amber-400",
         resultBorder: "border-cyan-300/70",
         resultGrid: "text-slate-600",
       };
@@ -156,6 +164,41 @@ export function TypingTest({
 
     return () => window.clearInterval(intervalId);
   }, [duration, startedAt, status]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      const activeElement = wordRefs.current.get(currentWordIndex);
+
+      if (!activeElement) {
+        return;
+      }
+
+      const visibleEntries = Array.from(wordRefs.current.entries())
+        .filter(([wordIndex]) => wordIndex >= visibleStart)
+        .sort(([firstIndex], [secondIndex]) => firstIndex - secondIndex);
+      const firstElement = visibleEntries[0]?.[1];
+
+      if (
+        !firstElement ||
+        Math.abs(activeElement.offsetTop - firstElement.offsetTop) <=
+          LINE_TOP_TOLERANCE
+      ) {
+        return;
+      }
+
+      const nextVisibleStart = visibleEntries.find(
+        ([, element]) =>
+          Math.abs(element.offsetTop - activeElement.offsetTop) <=
+          LINE_TOP_TOLERANCE,
+      )?.[0];
+
+      if (nextVisibleStart !== undefined && nextVisibleStart > visibleStart) {
+        setVisibleStart(nextVisibleStart);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [currentInput, currentWordIndex, visibleStart, wordQueue.length]);
 
   function focusInput() {
     if (status !== "finished") {
@@ -183,6 +226,7 @@ export function TypingTest({
     setStatus("idle");
     setStartedAt(null);
     setNow(getTimestamp());
+    setVisibleStart(0);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
@@ -193,6 +237,7 @@ export function TypingTest({
     setStatus("idle");
     setStartedAt(null);
     setNow(getTimestamp());
+    setVisibleStart(0);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
@@ -248,18 +293,18 @@ export function TypingTest({
     const isActiveWrong =
       isActive && currentInput.length > 0 && hasTypingError(targetWord, currentInput);
     const baseClass =
-      "relative inline-flex min-w-0 items-baseline rounded-sm px-0.5 transition-colors duration-150";
+      "relative inline-flex min-w-0 items-baseline rounded-sm px-1 transition-colors duration-150";
 
     if (typedWord !== undefined) {
       return `${baseClass} ${theme.wordTyped}`;
     }
 
     if (isActiveWrong) {
-      return `${baseClass} border-l-4 ${theme.activeWrong}`;
+      return `${baseClass} ${theme.activeWrong}`;
     }
 
     if (isActive) {
-      return `${baseClass} border-l-4 ${theme.activeWord}`;
+      return `${baseClass} ${theme.activeWord}`;
     }
 
     return `${baseClass} ${theme.wordPending}`;
@@ -271,13 +316,15 @@ export function TypingTest({
     const submittedWord = submittedWords[absoluteIndex];
     const typedWord = submittedWord ?? (isActive ? currentInput : "");
 
-    if (!typedWord) {
+    if (!isActive && !typedWord) {
       return word;
     }
 
+    const wordCharacters = Array.from(word);
+
     return (
       <>
-        {Array.from(word).map((character, characterIndex) => {
+        {wordCharacters.map((character, characterIndex) => {
           const typedCharacter = typedWord[characterIndex];
           const isMissingCharacter =
             submittedWord !== undefined && typedCharacter === undefined;
@@ -291,15 +338,23 @@ export function TypingTest({
                 : theme.wordPending;
 
           return (
-            <span className={characterClassName} key={`${word}-${characterIndex}`}>
-              {character}
-            </span>
+            <Fragment key={`${word}-${characterIndex}`}>
+              {isActive && typedWord.length === characterIndex ? (
+                <TypingCursor className="left-[-1px]" colorClassName={theme.cursor} />
+              ) : null}
+              <span className={`relative inline-block ${characterClassName}`}>
+                {character}
+              </span>
+            </Fragment>
           );
         })}
         {typedWord.length > word.length ? (
           <span
             className={`ml-1 inline-block h-[0.75em] w-1 rounded-full align-baseline ${theme.extraWrong}`}
           />
+        ) : null}
+        {isActive && typedWord.length >= wordCharacters.length ? (
+          <TypingCursor className="left-0" colorClassName={theme.cursor} />
         ) : null}
       </>
     );
@@ -410,6 +465,15 @@ export function TypingTest({
               <span
                 className={getWordClassName(index)}
                 key={`${visibleStart + index}-${word}`}
+                ref={(element) => {
+                  const wordIndex = visibleStart + index;
+
+                  if (element) {
+                    wordRefs.current.set(wordIndex, element);
+                  } else {
+                    wordRefs.current.delete(wordIndex);
+                  }
+                }}
               >
                 {renderWord(word, index)}
               </span>
@@ -462,6 +526,24 @@ type ResultStatProps = {
   value: number | string;
   muted?: boolean;
 };
+
+type TypingCursorProps = {
+  className?: string;
+  colorClassName: string;
+};
+
+function TypingCursor({
+  className = "left-0",
+  colorClassName,
+}: TypingCursorProps) {
+  return (
+    <span aria-hidden="true" className="relative inline-block w-0 align-baseline">
+      <span
+        className={`typing-caret pointer-events-none absolute bottom-[0.08em] h-[1.08em] w-0.5 rounded-full ${className} ${colorClassName}`}
+      />
+    </span>
+  );
+}
 
 function ResultStat({
   isDarkMode,
