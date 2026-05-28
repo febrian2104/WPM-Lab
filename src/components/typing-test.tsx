@@ -243,49 +243,49 @@ export function TypingTest({
   const isDarkMode = activeThemeMode === "dark";
   const theme = isDarkMode
     ? {
-        page: "bg-[#101412] text-teal-50",
-        headerBorder: "border-teal-300/25",
-        languageText: "text-teal-50",
-        languageMuted: "text-teal-100/55",
-        toolbarText: "text-teal-50",
+        page: "bg-[#100f18] text-violet-50",
+        headerBorder: "border-purple-400/30",
+        languageText: "text-violet-50",
+        languageMuted: "text-cyan-100/55",
+        toolbarText: "text-violet-50",
         activeButton:
-          "bg-teal-100 text-[#102018] shadow-sm ring-1 ring-teal-200/80",
-        inactiveButton: "text-teal-50/75 hover:bg-white/10 hover:text-white",
-        iconButton: "text-teal-50/80 hover:bg-white/10 hover:text-white",
-        timer: "text-teal-50/90",
-        wordArea: "text-teal-50/45",
-        wordTyped: "text-teal-50",
-        wordPending: "text-teal-50/45",
+          "bg-purple-500 text-white shadow-sm ring-1 ring-purple-300/70",
+        inactiveButton: "text-violet-50/75 hover:bg-purple-400/15 hover:text-white",
+        iconButton: "text-violet-50/80 hover:bg-purple-400/15 hover:text-white",
+        timer: "text-purple-200",
+        wordArea: "text-violet-100/45",
+        wordTyped: "text-violet-50",
+        wordPending: "text-violet-100/45",
         wrongText: "text-rose-300",
-        activeWrong: "text-teal-50",
-        activeWord: "text-teal-50",
-        currentLetter: "text-teal-50 before:bg-cyan-500/45",
-        extraWrong: "bg-rose-300",
-        cursor: "bg-cyan-200",
-        resultBorder: "border-teal-300/25",
-        resultGrid: "text-teal-50/65",
+        activeWrong: "text-violet-50",
+        activeWord: "text-violet-50",
+        currentLetter: "text-white before:bg-purple-500/45",
+        extraWrong: "bg-orange-400",
+        cursor: "bg-purple-300",
+        resultBorder: "border-purple-400/30",
+        resultGrid: "text-violet-50/65",
       }
     : {
-        page: "bg-[#e8f7fb] text-slate-950",
-        headerBorder: "border-cyan-300/70",
+        page: "bg-[#eefaff] text-slate-950",
+        headerBorder: "border-purple-300/70",
         languageText: "text-slate-800",
-        languageMuted: "text-slate-500",
+        languageMuted: "text-purple-500",
         toolbarText: "text-slate-800",
         activeButton:
-          "bg-white/70 text-slate-950 shadow-sm ring-1 ring-cyan-200",
-        inactiveButton: "text-slate-800 hover:bg-white/45 hover:text-slate-950",
-        iconButton: "text-slate-800 hover:bg-white/45 hover:text-slate-950",
-        timer: "text-slate-800",
+          "bg-purple-600 text-white shadow-sm ring-1 ring-purple-300",
+        inactiveButton: "text-slate-700 hover:bg-purple-100/70 hover:text-purple-900",
+        iconButton: "text-slate-700 hover:bg-purple-100/70 hover:text-purple-900",
+        timer: "text-purple-700",
         wordArea: "text-slate-500",
         wordTyped: "text-slate-950",
         wordPending: "text-slate-500",
         wrongText: "text-rose-600",
         activeWrong: "text-slate-950",
         activeWord: "text-slate-950",
-        currentLetter: "text-slate-950 before:bg-cyan-300",
-        extraWrong: "bg-rose-500",
-        cursor: "bg-cyan-700",
-        resultBorder: "border-cyan-300/70",
+        currentLetter: "text-slate-950 before:bg-purple-200",
+        extraWrong: "bg-orange-500",
+        cursor: "bg-purple-700",
+        resultBorder: "border-purple-300/70",
         resultGrid: "text-slate-600",
       };
 
@@ -831,11 +831,11 @@ function TypingResultChart({
       };
 
   return (
-    <section className={`min-h-[430px] border-t pt-8 ${isDarkMode ? "border-teal-300/25" : "border-cyan-300/70"}`}>
+    <section className={`min-h-[430px] border-t pt-8 ${isDarkMode ? "border-purple-400/30" : "border-purple-300/70"}`}>
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <dl className="grid gap-8 sm:grid-cols-2">
           <div>
-            <dt className={`text-xs font-bold uppercase tracking-normal ${isDarkMode ? "text-teal-100/55" : "text-slate-500"}`}>
+            <dt className={`text-xs font-bold uppercase tracking-normal ${isDarkMode ? "text-purple-100/60" : "text-purple-600/75"}`}>
               Word per minute
             </dt>
             <dd className="mt-1 text-5xl font-bold leading-none text-purple-500">
@@ -843,7 +843,7 @@ function TypingResultChart({
             </dd>
           </div>
           <div>
-            <dt className={`text-xs font-bold uppercase tracking-normal ${isDarkMode ? "text-teal-100/55" : "text-slate-500"}`}>
+            <dt className={`text-xs font-bold uppercase tracking-normal ${isDarkMode ? "text-purple-100/60" : "text-purple-600/75"}`}>
               Akurasi
             </dt>
             <dd className="mt-1 text-5xl font-bold leading-none text-purple-500">
@@ -852,12 +852,12 @@ function TypingResultChart({
           </div>
         </dl>
 
-        <p className={`text-sm font-semibold ${isDarkMode ? "text-teal-100/55" : "text-slate-500"}`}>
+        <p className={`text-sm font-semibold ${isDarkMode ? "text-purple-100/60" : "text-purple-600/75"}`}>
           Tes Mengetik - Waktu {duration} - {languageLabel}
         </p>
       </div>
 
-      <div className={`mt-7 border-t pt-4 ${isDarkMode ? "border-teal-300/25" : "border-cyan-300/70"}`}>
+      <div className={`mt-7 border-t pt-4 ${isDarkMode ? "border-purple-400/30" : "border-purple-300/70"}`}>
         <div className="mb-3 flex flex-wrap items-center justify-center gap-4 text-sm">
           <ChartLegend
             active={focusedMetric === "wpm"}
@@ -1046,7 +1046,7 @@ function TypingResultChart({
         </svg>
       </div>
 
-      <dl className={`mt-5 grid gap-4 text-sm sm:grid-cols-4 ${isDarkMode ? "text-teal-100/70" : "text-slate-600"}`}>
+      <dl className={`mt-5 grid gap-4 text-sm sm:grid-cols-4 ${isDarkMode ? "text-violet-100/70" : "text-slate-600"}`}>
         <ResultStat isDarkMode={isDarkMode} label="Error" value={errors} muted />
         <ResultStat
           isDarkMode={isDarkMode}
@@ -1088,8 +1088,8 @@ function ChartLegend({
   return (
     <button
       aria-pressed={active}
-      className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2 font-medium transition focus:outline-none focus:ring-2 focus:ring-cyan-400/70 ${
-        active ? "bg-cyan-300/25 shadow-sm" : "hover:bg-cyan-300/15"
+      className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2 font-medium transition focus:outline-none focus:ring-2 focus:ring-purple-400/70 ${
+        active ? "bg-purple-400/20 shadow-sm" : "hover:bg-purple-400/10"
       } ${isDimmed ? "opacity-35" : "opacity-100"}`}
       onBlur={onClearFocus}
       onFocus={() => onFocusMetric(metric)}
@@ -1111,15 +1111,15 @@ function ResultStat({
 }: ResultStatProps) {
   const labelClassName = isDarkMode
     ? muted
-      ? "text-teal-100/55"
-      : "text-teal-100/70"
+      ? "text-purple-100/55"
+      : "text-purple-100/70"
     : muted
       ? "text-slate-500"
       : "text-slate-600";
   const valueClassName = isDarkMode
     ? muted
-      ? "text-2xl text-teal-50/80"
-      : "text-4xl text-teal-50"
+      ? "text-2xl text-violet-50/80"
+      : "text-4xl text-violet-50"
     : muted
       ? "text-2xl text-slate-700"
       : "text-4xl text-slate-950";
