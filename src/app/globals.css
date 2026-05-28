@@ -35,12 +35,82 @@ body {
   }
 }
 
+@keyframes result-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes result-chart-area-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes result-chart-line-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes result-chart-point-in {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .typing-caret {
   animation: typing-caret-blink 1s steps(1, end) infinite;
 }
 
+.result-panel-in {
+  animation: result-panel-in 520ms ease-out both;
+}
+
+.result-chart-area {
+  animation: result-chart-area-in 700ms ease-out 120ms both;
+}
+
+.result-chart-line {
+  animation: result-chart-line-draw 900ms ease-out 180ms both;
+  stroke-dasharray: 1600;
+  stroke-dashoffset: 1600;
+}
+
+.result-chart-point {
+  animation: result-chart-point-in 420ms cubic-bezier(0.2, 0.9, 0.25, 1.25)
+    both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .typing-caret {
+  .typing-caret,
+  .result-panel-in,
+  .result-chart-area,
+  .result-chart-line,
+  .result-chart-point {
     animation: none;
+  }
+
+  .result-chart-line {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
   }
 }

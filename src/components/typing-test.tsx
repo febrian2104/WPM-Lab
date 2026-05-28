@@ -91,6 +91,21 @@ function formatTime(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function formatChartTime(totalSeconds: number) {
+  if (totalSeconds < 60) {
+    return `${totalSeconds} detik`;
+  }
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (seconds === 0) {
+    return `${minutes} menit`;
+  }
+
+  return `${minutes} menit ${seconds} detik`;
+}
+
 function hasTypingError(targetWord: string, typedWord: string) {
   return Array.from(typedWord).some(
     (typedCharacter, index) => typedCharacter !== targetWord[index],
@@ -677,58 +692,31 @@ export function TypingTest({
               score={score}
             />
           ) : (
-            <>
-              <div className={`flex h-[290px] min-w-0 flex-wrap content-start gap-x-3 gap-y-4 overflow-hidden font-serif text-3xl leading-relaxed sm:text-4xl ${theme.wordArea}`}>
-                {visibleWords.map((word, index) => (
-                  <span
-                    className={getWordClassName(index)}
-                    key={`${visibleStart + index}-${word}`}
-                    ref={(element) => {
-                      const wordIndex = visibleStart + index;
+            <div className={`flex h-[290px] min-w-0 flex-wrap content-start gap-x-3 gap-y-4 overflow-hidden font-serif text-3xl leading-relaxed sm:text-4xl ${theme.wordArea}`}>
+              {visibleWords.map((word, index) => (
+                <span
+                  className={getWordClassName(index)}
+                  key={`${visibleStart + index}-${word}`}
+                  ref={(element) => {
+                    const wordIndex = visibleStart + index;
 
-                      if (element) {
-                        wordRefs.current.set(wordIndex, element);
-                      } else {
-                        wordRefs.current.delete(wordIndex);
-                      }
-                    }}
-                  >
-                    {renderWord(word, index)}
-                  </span>
-                ))}
-              </div>
-
-              <div className={`mt-8 min-h-24 border-t pt-6 transition-colors duration-300 ${theme.resultBorder}`}>
-                <div className={`grid max-w-xl grid-cols-3 gap-5 text-sm ${theme.resultGrid}`}>
-                  <ResultStat isDarkMode={isDarkMode} label="WPM" value={score.wpm} muted />
-                  <ResultStat
-                    isDarkMode={isDarkMode}
-                    label="Akurasi"
-                    value={`${score.accuracy}%`}
-                    muted
-                  />
-                  <ResultStat
-                    isDarkMode={isDarkMode}
-                    label="Benar"
-                    value={score.correctWords}
-                    muted
-                  />
-                </div>
-              </div>
-            </>
+                    if (element) {
+                      wordRefs.current.set(wordIndex, element);
+                    } else {
+                      wordRefs.current.delete(wordIndex);
+                    }
+                  }}
+                >
+                  {renderWord(word, index)}
+                </span>
+              ))}
+            </div>
           )}
         </main>
       </div>
     </section>
   );
 }
-
-type ResultStatProps = {
-  isDarkMode: boolean;
-  label: string;
-  value: number | string;
-  muted?: boolean;
-};
 
 type TypingCursorProps = {
   className?: string;
@@ -831,7 +819,7 @@ function TypingResultChart({
       };
 
   return (
-    <section className={`min-h-[430px] border-t pt-8 ${isDarkMode ? "border-purple-400/30" : "border-purple-300/70"}`}>
+    <section className={`result-panel-in min-h-[430px] border-t pt-8 ${isDarkMode ? "border-purple-400/30" : "border-purple-300/70"}`}>
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <dl className="grid gap-8 sm:grid-cols-2">
           <div>
@@ -961,11 +949,13 @@ function TypingResultChart({
           </text>
 
           <path
+            className="result-chart-area"
             d={areaPath}
             fill="url(#wpm-area-gradient)"
             opacity={isWpmFocused ? 1 : 0.16}
           />
           <path
+            className="result-chart-line"
             d={linePath}
             fill="none"
             opacity={isWpmFocused ? 1 : 0.2}
@@ -975,25 +965,29 @@ function TypingResultChart({
             strokeWidth={focusedMetric === "wpm" ? 5 : 3}
           />
 
-          {errorPoints.map((sample) => (
+          {errorPoints.map((sample, index) => (
             <circle
+              className="result-chart-point"
               cx={getChartX(sample.second, duration)}
               cy={getChartY(Math.max(sample.wpm, maxWpm * 0.2), maxWpm)}
               fill="#f43f5e"
               key={`error-${sample.second}-${sample.errors}`}
               opacity={isErrorFocused ? 1 : 0.2}
               r={focusedMetric === "error" ? 7 : 5}
+              style={{ animationDelay: `${360 + index * 35}ms` }}
             />
           ))}
 
-          {modificationPoints.map((sample) => (
+          {modificationPoints.map((sample, index) => (
             <circle
+              className="result-chart-point"
               cx={getChartX(sample.second, duration)}
               cy={getChartY(Math.max(sample.wpm, maxWpm * 0.15), maxWpm)}
               fill="#f97316"
               key={`modification-${sample.second}-${sample.modifications}`}
               opacity={isModificationFocused ? 1 : 0.2}
               r={focusedMetric === "modification" ? 7 : 5}
+              style={{ animationDelay: `${420 + index * 35}ms` }}
             />
           ))}
 
@@ -1008,7 +1002,7 @@ function TypingResultChart({
 
           {xTicks.map((tick) => {
             const x = getChartX(tick, duration);
-            const minuteLabel = `${Math.round((tick / 60) * 10) / 10}m`;
+            const timeLabel = formatChartTime(tick);
 
             return (
               <g key={tick}>
@@ -1027,7 +1021,7 @@ function TypingResultChart({
                   x={x}
                   y={chartBottom + 28}
                 >
-                  {minuteLabel}
+                  {timeLabel}
                 </text>
               </g>
             );
@@ -1041,27 +1035,10 @@ function TypingResultChart({
             x={(CHART_WIDTH + CHART_PADDING.left - CHART_PADDING.right) / 2}
             y={CHART_HEIGHT - 4}
           >
-            Menit
+            Waktu
           </text>
         </svg>
       </div>
-
-      <dl className={`mt-5 grid gap-4 text-sm sm:grid-cols-4 ${isDarkMode ? "text-violet-100/70" : "text-slate-600"}`}>
-        <ResultStat isDarkMode={isDarkMode} label="Error" value={errors} muted />
-        <ResultStat
-          isDarkMode={isDarkMode}
-          label="Modifikasi"
-          value={modifications}
-          muted
-        />
-        <ResultStat
-          isDarkMode={isDarkMode}
-          label="Benar"
-          value={score.correctWords}
-          muted
-        />
-        <ResultStat isDarkMode={isDarkMode} label="Raw" value={score.rawWpm} muted />
-      </dl>
     </section>
   );
 }
@@ -1100,38 +1077,5 @@ function ChartLegend({
       <span className={`h-3.5 w-3.5 rounded-full ${colorClassName}`} />
       <span>{label}</span>
     </button>
-  );
-}
-
-function ResultStat({
-  isDarkMode,
-  label,
-  value,
-  muted = false,
-}: ResultStatProps) {
-  const labelClassName = isDarkMode
-    ? muted
-      ? "text-purple-100/55"
-      : "text-purple-100/70"
-    : muted
-      ? "text-slate-500"
-      : "text-slate-600";
-  const valueClassName = isDarkMode
-    ? muted
-      ? "text-2xl text-violet-50/80"
-      : "text-4xl text-violet-50"
-    : muted
-      ? "text-2xl text-slate-700"
-      : "text-4xl text-slate-950";
-
-  return (
-    <div>
-      <dt className={`text-sm font-medium ${labelClassName}`}>
-        {label}
-      </dt>
-      <dd className={`mt-1 font-semibold tabular-nums ${valueClassName}`}>
-        {value}
-      </dd>
-    </div>
   );
 }
